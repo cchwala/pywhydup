@@ -75,7 +75,7 @@ class WrfHydroSetup(object):
                               datetime.strftime(t_start, 'START_DAY  = %d'),
                               file_content)
 
-        with open("fn", "wt") as f_out:
+        with open(fn, "wt") as f_out:
             f_out.write(file_content)
 
 
@@ -193,6 +193,7 @@ class SetupDirHandler(object):
 
         if t_start:
             new_setup.set_new_starting_date_in_namelist_file(t_start=t_start)
+            print('Updated start date in `namelist.hrldas')
 
         return new_setup
 
