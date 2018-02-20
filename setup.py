@@ -9,7 +9,7 @@ setuptools.setup(
     author_email="christian.chwala@kit.edu",
 
     description="Python WRF-Hydro setup duplicator, manipulator and SLURM runner",
-    long_description=open('README.rst').read(),
+    long_description=open('README.md').read(),
 
     packages=setuptools.find_packages(),
 
