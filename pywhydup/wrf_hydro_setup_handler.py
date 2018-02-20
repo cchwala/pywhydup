@@ -10,25 +10,24 @@ import re
 class WrfHydroSetup(object):
     def __init__(self,
                  absolute_path,
-                 server='keal.imk-ifu.kit.edu',
-                 remote_user=None,
                  forcing_dir='forcing'):
-        self.server = server
-        self.remote_user = remote_user
         self.absolute_path = absolute_path
         self.forcing_dir = forcing_dir
 
-    def slurm_submit(self, remote=True):
+    def slurm_submit(self,
+                     server='keal',
+                     remote_user=None,
+                     remote=True):
         if remote:
-            if self.remote_user:
+            if remote_user:
                 command_str = 'ssh {}@{} "cd {}; sbatch run_slurm.sh"'.format(
-                    self.remote_user, self.server, self.absolute_path)
+                    remote_user, server, self.absolute_path)
             else:
                 command_str = 'ssh {} "cd {}; sbatch run_slurm.sh"'.format(
-                    self.server, self.absolute_path)
+                    server, self.absolute_path)
         else:
             command_str = '"cd {}; sbatch run_slurm.sh"'.format(
-                self.remote_user, self.server, self.absolute_path)
+                remote_user, server, self.absolute_path)
         return commands.getstatusoutput(command_str)
 
     def overwrite_rainfall_forcing_data(self, rainrate_dataarray):
