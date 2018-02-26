@@ -34,7 +34,7 @@ Installation
 Clone the repo and install the dependencies. Then do a local install via `pip`
 
 ```
-conda install netcdf4
+conda install netcdf4 xarray
 
 pip install -e PATH_TO_CLONED_REPO
 ```

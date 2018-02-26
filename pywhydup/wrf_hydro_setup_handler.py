@@ -1,6 +1,6 @@
 import commands
 from glob import glob
-from os import path, listdir, makedirs
+from os import path, makedirs
 import netCDF4
 from datetime import datetime
 import shutil
@@ -117,6 +117,10 @@ class WrfHydroSetupTemplate(WrfHydroSetupBase):
 
         Returns
         -------
+
+        new_setup : WrfHydroSetup
+            New instance of a WrfHydroSetup referring to the newly created
+            setup in the newly created directory
 
         """
         # Make a copy of the WRF-Hydro template folder
@@ -276,16 +280,21 @@ class SetupDirHandler(object):
             absolute_path=path.join(root_dir, template_dir),
             forcing_dir=template_forcing_dir)
 
+    def duplicate_template(self,
+                           new_dir=None,
+                           t_start=None,
+                           t_stop=None,
+                           t_format='%Y-%m-%d'):
 
-def build_LDAS_filename(date, in_out='IN', domain_N=3):
-    date_str = date
-    fn = date_str + '.LDAS' + in_out + '_DOMAIN' + str(domain_N)
-    return fn
+        new_setup = self.template_setup.duplicate(new_dir=new_dir,
+                                                  t_start=t_start,
+                                                  t_stop=t_stop,
+                                                  t_format=t_format)
 
+        return new_setup
 
-def build_LDAS_full_path(date, in_out='IN', domain_N=3):
-    fn = build_LDAS_filename(date, in_out, domain_N)
-    return path.join(wrf_forcing_dir, fn)
+SetupDirHandler.duplicate_template.__func__.__doc__ = \
+    WrfHydroSetupTemplate.duplicate.__doc__
 
 
 def get_date_from_LDAS_filename(fn):
