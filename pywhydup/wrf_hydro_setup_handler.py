@@ -1,11 +1,13 @@
 import commands
 from glob import glob
 from os import path, makedirs
-import netCDF4
 from datetime import datetime
 import shutil
 import re
+
+import netCDF4
 import xarray as xr
+import pandas as pd
 
 
 class WrfHydroSetupBase(object):
@@ -16,21 +18,35 @@ class WrfHydroSetupBase(object):
         self.root_dir = path.normpath(path.join(absolute_path, '..'))
         self.forcing_dir = forcing_dir
 
-        self.t_start, self.t_stop = self._get_forcing_files_t_start_and_stop()
-        self.lon_grid, self.lat_grid = self._get_forcing_file_lon_lat_grid()
+        self.t_start, self.t_stop = self.get_forcing_files_t_start_and_stop()
+        self.lon_grid, self.lat_grid = self.get_forcing_file_lon_lat_grid()
 
-    def _get_forcing_files_t_start_and_stop(self):
+    def get_forcing_files_t_start_and_stop(self):
         forcing_file_list = self.get_forcing_file_list()
         t_start = get_date_from_LDAS_filename(forcing_file_list[0])
         t_stop = get_date_from_LDAS_filename(forcing_file_list[-1])
         return t_start, t_stop
 
-    def _get_forcing_file_lon_lat_grid(self):
+    def get_forcing_file_lon_lat_grid(self):
         fn_list = self.get_forcing_file_list()
         ds = xr.open_dataset(fn_list[0])
         lon_grid = ds.XLONG_M.isel(Time=0)
         lat_grid = ds.XLAT_M.isel(Time=0)
         return lon_grid.values, lat_grid.values
+
+    def get_forcing_files_as_xarray_dataset(self):
+        print('Building Dataset from all LDASIN files. '
+              'This can takes some time...')
+        ds_ldasin = xr.open_mfdataset(self.get_forcing_file_list(),
+                                      concat_dim='Time',
+                                      autoclose=True)
+        print('Parsing time stamp string to datetime. '
+              'This can also take some time...')
+        ts_list = [
+            pd.to_datetime(str(ds_ldasin.Times[i].values).replace('_', '-'))
+            for i in range(len(ds_ldasin.Times))]
+        ds_ldasin['Times'] = ('Time'), ts_list
+        return ds_ldasin
 
     def get_forcing_file_list(self,
                               t_start=None,
@@ -213,6 +229,28 @@ class WrfHydroSetup(WrfHydroSetupBase):
         return commands.getstatusoutput(command_str)
 
     def overwrite_rainfall_forcing_data(self, rainrate_dataarray):
+        """ Overwrite rainfall forcing in LDASIN files with own gridded data
+
+        The provided gridded data must be supplied as a `xarray.DataArray`
+        with the same lat-lon coordinates as the LDASIN files. The units for
+        the gridded rainfall data must be mm/h and will be converted to mm/s
+        which the LDASIN files use.
+
+        It is recommended to get the lat and lon grids from one LDASIN file and
+        directly interpolated onto these to make sure the alignment is correct.
+        The method `get_forcing_file_lon_lat_grid()` can be used to get the
+        grids from the LDASIN files.
+
+        Parameters
+        ----------
+        rainrate_dataarray: xarray.DataArray
+            Gridded rainfall data with hourly time stamps and the same lat-lon
+            shape as
+
+        Returns
+        -------
+
+        """
         # Get all forcing files
         print 'Trying to exchange forcing data for RAINFALL...'
         fn_list = self.get_forcing_file_list()
@@ -225,15 +263,42 @@ class WrfHydroSetup(WrfHydroSetupBase):
             date = get_date_from_LDAS_filename(fn_local)
 
             try:
-                # Open forcing file and replace rain rate field
-                #   !!! Beware, rainrate must be in mm/s !!!
+                R_field_mm_h = (rainrate_dataarray
+                                .sel(time=date)
+                                .fillna(0)
+                                .values)
+                data_available = True
+            except KeyError:
+                print('%s : time step %s not available in data array'
+                      % (fn_local, str(date)))
+                data_available = False
+
+            # Open forcing file and replace rain rate field
+            #   !!! Beware, rainrate must be in mm/s !!!
+            if data_available:
                 with netCDF4.Dataset(fn_full_path, mode='r+') as ds:
-                    R_field_mm_h = rainrate_dataarray.sel(time=date)
                     R_field_mm_s = R_field_mm_h / 60.0 / 60.0
                     ds.variables['RAINRATE'][0, :, :] = R_field_mm_s
-                print 'netCDF file RAINRATE updated'
-            except:
-                print 'Could not write to netCDF file'
+                print '%s : RAINRATE updated in netCDF file' % fn_local
+
+    def read_stream_flow_results(self):
+        """ Parse the WRF-Hydro output file `frxst_pts_out.txt` to a DataFrame
+
+        Returns
+        -------
+
+        df : DataFrame
+
+        """
+        header = ['sim_t_sec', 'id', 'lat', 'lon', 'Q_m3_s', 'Q_ft3_s',
+                  'water_level_m']
+
+        df = pd.read_csv(
+            path.join(self.absolute_path, 'frxst_pts_out.txt'),
+            index_col=1,
+            parse_dates=True)
+        df.columns = header
+        return df
 
     def set_new_starting_date_in_namelist_file(self,
                                                t_start,
@@ -290,8 +355,10 @@ class SetupDirHandler(object):
                                                   t_start=t_start,
                                                   t_stop=t_stop,
                                                   t_format=t_format)
-
         return new_setup
+
+    def get_list_of_setup_dirs(self):
+        return glob(path.join(self.root_dir, 'setup_???'))
 
 SetupDirHandler.duplicate_template.__func__.__doc__ = \
     WrfHydroSetupTemplate.duplicate.__doc__
