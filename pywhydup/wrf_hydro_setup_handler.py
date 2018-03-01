@@ -363,8 +363,13 @@ class SetupDirHandler(object):
     def get_list_of_setup_dirs(self):
         return glob(path.join(self.root_dir, 'setup_???'))
 
-SetupDirHandler.duplicate_template.__func__.__doc__ = \
-    WrfHydroSetupTemplate.duplicate.__doc__
+
+try:
+    SetupDirHandler.duplicate_template.__func__.__doc__ = \
+        WrfHydroSetupTemplate.duplicate.__doc__
+except AttributeError:
+    SetupDirHandler.duplicate_template.__doc__ = \
+        WrfHydroSetupTemplate.duplicate.__doc__
 
 
 def get_date_from_LDAS_filename(fn):
