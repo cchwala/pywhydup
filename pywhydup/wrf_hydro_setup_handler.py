@@ -197,9 +197,9 @@ class WrfHydroSetupTemplate(WrfHydroSetupBase):
 
             print('Copied everything to {}'.format(path.join(self.root_dir,
                                                              new_dir)))
-        except OSError, e:
-            print e
-            print 'Skipping copying of template dir.'
+        except OSError as e:
+            print(e)
+            print('Skipping copying of template dir.')
 
         new_setup = WrfHydroSetup(absolute_path=path.join(self.root_dir,
                                                           new_dir))
@@ -252,7 +252,7 @@ class WrfHydroSetup(WrfHydroSetupBase):
 
         """
         # Get all forcing files
-        print 'Trying to exchange forcing data for RAINFALL...'
+        print('Trying to exchange forcing data for RAINFALL...')
         fn_list = self.get_forcing_file_list()
         fn_list.sort()
 
@@ -279,7 +279,7 @@ class WrfHydroSetup(WrfHydroSetupBase):
                 with netCDF4.Dataset(fn_full_path, mode='r+') as ds:
                     R_field_mm_s = R_field_mm_h / 60.0 / 60.0
                     ds.variables['RAINRATE'][0, :, :] = R_field_mm_s
-                print '%s : RAINRATE updated in netCDF file' % fn_local
+                print('%s : RAINRATE updated in netCDF file' % fn_local)
 
     def read_stream_flow_results(self):
         """ Parse the WRF-Hydro output file `frxst_pts_out.txt` to a DataFrame
