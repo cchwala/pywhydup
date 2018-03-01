@@ -42,9 +42,12 @@ class WrfHydroSetupBase(object):
                                       autoclose=True)
         print('Parsing time stamp string to datetime. '
               'This can also take some time...')
-        ts_list = [
-            pd.to_datetime(str(ds_ldasin.Times[i].values).replace('_', '-'))
-            for i in range(len(ds_ldasin.Times))]
+
+        ts_string_list = ds_ldasin.Times.values.astype('U')
+
+        ts_list = [pd.to_datetime(ts_string.replace('_', ' '))
+                   for ts_string in ts_string_list]
+
         ds_ldasin['Times'] = ('Time'), ts_list
         return ds_ldasin
 
