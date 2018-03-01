@@ -226,7 +226,7 @@ class WrfHydroSetup(WrfHydroSetupBase):
         else:
             command_str = '"cd {}; sbatch run_slurm.sh"'.format(
                 remote_user, server, self.absolute_path)
-        print('asdasdasdasda')
+
         return subprocess.Popen(command_str,
                                 shell=True,
                                 stdout=subprocess.PIPE).stdout.read()
