@@ -1,4 +1,4 @@
-import commands
+import subprocess
 from glob import glob
 from os import path, makedirs
 from datetime import datetime
@@ -226,7 +226,10 @@ class WrfHydroSetup(WrfHydroSetupBase):
         else:
             command_str = '"cd {}; sbatch run_slurm.sh"'.format(
                 remote_user, server, self.absolute_path)
-        return commands.getstatusoutput(command_str)
+        print('asdasdasdasda')
+        return subprocess.Popen(command_str,
+                                shell=True,
+                                stdout=subprocess.PIPE).stdout.read()
 
     def overwrite_rainfall_forcing_data(self, rainrate_dataarray):
         """ Overwrite rainfall forcing in LDASIN files with own gridded data
