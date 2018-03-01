@@ -202,7 +202,8 @@ class WrfHydroSetupTemplate(WrfHydroSetupBase):
             print('Skipping copying of template dir.')
 
         new_setup = WrfHydroSetup(absolute_path=path.join(self.root_dir,
-                                                          new_dir))
+                                                          new_dir),
+                                  forcing_dir=self.forcing_dir)
 
         if t_start:
             new_setup.set_new_starting_date_in_namelist_file(t_start=t_start)
